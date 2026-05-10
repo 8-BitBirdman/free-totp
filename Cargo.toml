@@ -1,0 +1,67 @@
+[package]
+name = "free-totp"
+description = "TOTP client made with Iced"
+authors = ["antigravity <kysdev.owjga@aleeas.com>"]
+version = "0.2.5"
+edition = "2024"
+license = "GPL-3.0"
+repository = "https://github.com/antigravity/free-totp"
+
+[dependencies]
+iced = { git = "https://github.com/iced-rs/iced", default-features = true, features = [
+    "tokio",
+    "image",
+    "advanced",
+    "svg",
+] }
+anywho = "0.1.2"
+dirs = "6.0.0"
+smol = "2.0.2"
+keepass = { version = "0.12.4", features = [
+    "save_kdbx4",
+] } # KeePass DB Management
+rqrr = "0.10.1" # QR Detection
+totp-rs = { version = "5.7.1", features = [
+    "otpauth",
+    "qr",
+] } # TOTP Generation ...
+rfd = "0.17.2" # File System Dialogs
+secrecy = "0.10.3" # Provides us with SecretString
+uuid = "1.23.1" # Allows us to identify entries
+serde = { version = "1.0.228", features = [
+    "derive",
+] } # Needed for config serializing and deserializing
+ron = "0.12.1" # Needed for config serializing and deserializing
+image = { version = "0.25.10", default-features = false, features = [
+    "jpeg",
+    "png",
+    "webp",
+    "rayon",
+] } # needed for qr detection
+open = "5.3.4" # needed for opening the default browser
+
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[target.'cfg(target_os = "linux")'.dependencies] # gstreamer dependencies for qr detection with camera (Unix-like systems)
+gstreamer = "0.25.1"
+gstreamer-app = "0.25.0"
+gstreamer-video = "0.25.0"
+ashpd = { version = "0.13.10", default-features = false, features = ["tokio", "camera"] }
+
+# Enable a small amount of optimization in the dev profile.
+[profile.dev]
+opt-level = 1
+
+# Enable a large amount of optimization in the dev profile for dependencies.
+[profile.dev.package."*"]
+opt-level = 3
+
+# Enable more optimization in the release profile at the cost of compile time.
+[profile.release]
+# Compile the entire crate as one unit.
+# Slows compile times, marginal improvements.
+codegen-units = 1
+# Do a second optimization pass over the entire program, including dependencies.
+# Slows compile times, marginal improvements.
+lto = "thin"

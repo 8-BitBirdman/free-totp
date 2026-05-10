@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=FreeTotp
+Comment=TOTP Client
+Exec=free-totp %F
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=dev.antigravity.FreeTotp
+Categories=Utility;
+Keywords=Tool;TOTP;Authenticator;2FA;OTP;Code;

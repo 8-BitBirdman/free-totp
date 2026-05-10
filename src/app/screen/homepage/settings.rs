@@ -1,0 +1,323 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
+
+use iced::{
+    Alignment, Element,
+    Length::{self},
+    Subscription, Task, Theme, event,
+    keyboard::{self, Key, key::Named},
+    time::Instant,
+    widget::{button, column, container, mouse_area, pick_list, row, scrollable, space, text},
+};
+use rfd::{AsyncFileDialog, FileHandle};
+use tracing::error;
+
+use crate::{
+    APP_ID,
+    app::{utils::style, widgets::Toast},
+    config::{ColockodeTheme, Config},
+    icons,
+};
+
+pub struct SettingsPage {
+    config: Arc<Mutex<Config>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Message {
+    /// Go back a screen
+    Back,
+    /// Callback after pressing a [`Hotkey`] of this page
+    Hotkey(Hotkey),
+    /// Callback after the user changes the current theme
+    ChangedTheme(ColockodeTheme),
+    /// Configuration Saved
+    ConfigurationSaved(Result<(), anywho::Error>),
+    /// Open the File Dialog to select a file to import
+    OpenImportDialog,
+    /// Open the File Dialog to select where to export the file
+    OpenExportDialog,
+    /// Import Path Selected Callback (after dialog)
+    ImportPathSelected(Option<FileHandle>),
+    /// Export Path Selected Callback (after dialog)
+    ExportPathSelected(Option<FileHandle>),
+    /// Opens the given URL in the browser
+    LaunchUrl(String),
+}
+
+pub enum Action {
+    /// Does nothing
+    None,
+    /// Go back a screen
+    Back,
+    // Ask parent to run an [`iced::Task`]
+    Run(Task<Message>),
+    /// Add a new [`Toast`] to show
+    AddToast(Toast),
+    /// Ask parent to import some content from the given filepath
+    ImportContent(PathBuf),
+    /// Ask parent to export the context to the given filepath
+    ExportContent(PathBuf),
+}
+
+impl SettingsPage {
+    pub fn new(config: Arc<Mutex<Config>>) -> (Self, Task<Message>) {
+        (Self { config }, Task::none())
+    }
+
+    pub fn view(&self, _now: Instant) -> iced::Element<'_, Message> {
+        let header = header_view();
+        let content = settings_view(&self.config);
+
+        container(
+            container(column![header, content])
+                .padding(5.)
+                .width(Length::Fill)
+                .height(Length::Fill),
+        )
+        .center(Length::Fill)
+        .into()
+    }
+
+    pub fn update(&mut self, message: Message, _now: Instant) -> Action {
+        match message {
+            Message::Back => Action::Back,
+            Message::Hotkey(hotkey) => match hotkey {
+                Hotkey::Esc => Action::Back,
+            },
+            Message::ChangedTheme(colockode_theme) => {
+                if let Ok(mut cfg) = self.config.lock() {
+                    cfg.theme = colockode_theme.clone();
+                    let cfg_clone = cfg.clone();
+
+                    return Action::Run(Task::perform(
+                        async move { cfg_clone.save(APP_ID).await },
+                        Message::ConfigurationSaved,
+                    ));
+                } else {
+                    error!("Warning: config mutex poisoned. Cannot change theme.");
+                }
+                Action::None
+            }
+            Message::ConfigurationSaved(result) => match result {
+                Ok(_) => Action::None,
+                Err(e) => Action::AddToast(Toast::error_toast(e)),
+            },
+            Message::OpenImportDialog => Action::Run(Task::perform(
+                async move {
+                    AsyncFileDialog::new()
+                        .add_filter("txt", &["txt"])
+                        .set_directory(dirs::download_dir().unwrap_or("/".into()))
+                        .pick_file()
+                        .await
+                },
+                Message::ImportPathSelected,
+            )),
+            Message::OpenExportDialog => Action::Run(Task::perform(
+                async move {
+                    AsyncFileDialog::new()
+                        .set_file_name("export.txt")
+                        .set_directory(dirs::download_dir().unwrap_or("/".into()))
+                        .save_file()
+                        .await
+                },
+                Message::ExportPathSelected,
+            )),
+            Message::ImportPathSelected(handle) => {
+                if let Some(file_handle) = handle {
+                    return Action::ImportContent(file_handle.path().to_path_buf());
+                }
+                Action::None
+            }
+            Message::ExportPathSelected(handle) => {
+                if let Some(file_handle) = handle {
+                    return Action::ExportContent(file_handle.path().to_path_buf());
+                }
+                Action::None
+            }
+            Message::LaunchUrl(url) => {
+                match open::that_detached(&url) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        error!("failed to open {url:?}: {err}");
+                    }
+                }
+                Action::None
+            }
+        }
+    }
+
+    pub fn subscription(&self, _now: Instant) -> Subscription<Message> {
+        event::listen_with(handle_event)
+    }
+}
+
+/// View of the header of this screen
+fn header_view<'a>() -> Element<'a, Message> {
+    row![
+        // Back button
+        button(
+            row![
+                icons::get_icon("go-previous-symbolic", 21),
+                text("Back").size(style::font_size::BODY)
+            ]
+            .spacing(style::spacing::TINY)
+            .align_y(iced::Alignment::Center)
+        )
+        .on_press(Message::Back)
+        .padding(8)
+        .style(style::secondary_button),
+        column![
+            text("Settings").size(style::font_size::TITLE),
+            text("Application preferences")
+                .size(style::font_size::SMALL)
+                .style(style::muted_text),
+        ]
+        .spacing(style::spacing::TINY),
+        space().width(Length::Fill),
+    ]
+    .spacing(style::spacing::LARGE)
+    .padding(10)
+    .align_y(iced::Alignment::Center)
+    .width(Length::Fill)
+    .into()
+}
+
+fn settings_view<'a>(config: &'a Arc<Mutex<Config>>) -> Element<'a, Message> {
+    let settings_form = column![
+        // Export and Import buttons in a row
+        column![
+            text("Vault Management")
+                .size(style::font_size::BODY)
+                .style(style::label_text),
+            row![
+                button(
+                    row![
+                        icons::get_icon("document-export-symbolic", 21).style(|theme, _status| {
+                            let primary_style =
+                                button::primary(theme, iced::widget::button::Status::Active);
+                            iced::widget::svg::Style {
+                                color: Some(primary_style.text_color),
+                            }
+                        }),
+                        text("Export").size(style::font_size::MEDIUM)
+                    ]
+                    .spacing(style::spacing::TINY)
+                    .align_y(Alignment::Center)
+                )
+                .on_press(Message::OpenExportDialog)
+                .padding(12)
+                .width(Length::Fill)
+                .style(style::primary_button),
+                button(
+                    row![
+                        icons::get_icon("document-import-symbolic", 21).style(|theme, _status| {
+                            let primary_style =
+                                button::primary(theme, iced::widget::button::Status::Active);
+                            iced::widget::svg::Style {
+                                color: Some(primary_style.text_color),
+                            }
+                        }),
+                        text("Import").size(style::font_size::MEDIUM)
+                    ]
+                    .spacing(style::spacing::TINY)
+                    .align_y(Alignment::Center)
+                )
+                .on_press(Message::OpenImportDialog)
+                .padding(12)
+                .width(Length::Fill)
+                .style(style::primary_button),
+            ]
+            .spacing(style::spacing::MEDIUM),
+        ]
+        .spacing(style::spacing::TINY),
+        // Theme picker
+        column![
+            text("Theme")
+                .size(style::font_size::BODY)
+                .style(style::label_text),
+            pick_list(
+                {
+                    let cfg = config.lock().map(|c| c.theme.clone()).unwrap_or_default();
+                    let theme: Theme = cfg.into();
+                    Some(theme)
+                },
+                Theme::ALL,
+                |t: &Theme| t.to_string(),
+            )
+            .on_select(|t| Message::ChangedTheme(ColockodeTheme::try_from(&t).unwrap_or_default()))
+            .width(Length::Fill)
+            .padding(12)
+        ]
+        .spacing(style::spacing::TINY),
+    ]
+    .spacing(style::spacing::XLARGE)
+    .padding(10)
+    .max_width(600);
+
+    container(
+        column![
+            scrollable(container(settings_form).center_x(Length::Fill))
+                .width(Length::Fill)
+                .height(Length::Fill),
+            // App version at the bottom
+            container(
+                row![
+                    mouse_area(
+                        text(format!("Version {}", env!("CARGO_PKG_VERSION")))
+                            .size(style::font_size::SMALL)
+                            .style(style::link_text)
+                    )
+                    .on_press(Message::LaunchUrl(String::from(
+                        "https://github.com/antigravity/free_totp/releases"
+                    ))),
+                    text(" - ")
+                        .size(style::font_size::SMALL)
+                        .style(style::muted_text),
+                    mouse_area(
+                        text("Donate")
+                            .size(style::font_size::SMALL)
+                            .style(style::link_text)
+                    )
+                    .on_press(Message::LaunchUrl(String::from(
+                        "https://buymeacoffee.com/antigravity"
+                    )))
+                ]
+                .spacing(style::spacing::SMALL)
+            )
+            .width(Length::Fill)
+            .align_x(Alignment::Center)
+            .padding(10),
+        ]
+        .height(Length::Fill),
+    )
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .into()
+}
+
+//
+// SUBSCRIPTIONS
+//
+
+#[derive(Debug, Clone)]
+pub enum Hotkey {
+    Esc,
+}
+
+fn handle_event(event: event::Event, _: event::Status, _: iced::window::Id) -> Option<Message> {
+    #[allow(clippy::collapsible_match)]
+    match event {
+        event::Event::Keyboard(keyboard::Event::KeyPressed {
+            key, modifiers: _, ..
+        }) => match key {
+            Key::Named(Named::Escape) => Some(Message::Hotkey(Hotkey::Esc)),
+            _ => None,
+        },
+        _ => None,
+    }
+}

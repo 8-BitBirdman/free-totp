@@ -1,0 +1,34 @@
+app-id: dev.antigravity.FreeTotp
+# Note: No additional GStreamer plugins needed - app uses pipewiresrc which is
+# included in org.freedesktop.Platform via PipeWire's gst-plugin-pipewire
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: free-totp
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+modules:
+  - name: free-totp
+    buildsystem: simple
+    build-options:
+      env:
+        CARGO_HOME: /run/build/free-totp/cargo
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --verbose
+      - install -Dm0755 ./target/release/free-totp /app/bin/free-totp
+      - install -Dm0644 ./resources/dev.antigravity.FreeTotp.desktop /app/share/applications/dev.antigravity.FreeTotp.desktop
+      - install -Dm0644 ./resources/dev.antigravity.FreeTotp.metainfo.xml /app/share/metainfo/dev.antigravity.FreeTotp.metainfo.xml
+      - install -Dm0644 ./resources/icons/hicolor/256x256/apps/icon.png /app/share/icons/hicolor/256x256/apps/dev.antigravity.FreeTotp.png
+      - install -Dm0644 ./resources/icons/hicolor/scalable/apps/icon.svg /app/share/icons/hicolor/scalable/apps/dev.antigravity.FreeTotp.svg
+    sources:
+      - type: dir
+        path: .
+      - cargo-sources.json
