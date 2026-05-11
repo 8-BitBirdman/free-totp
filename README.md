@@ -22,14 +22,11 @@ Under the hood, FreeTotp uses a highly secure, encrypted **KeePass (.kdbx)** dat
 ## ✨ Features
 
 - 🎨 **Premium UI/UX**: A gorgeous, newly overhauled user interface featuring soft radiuses, elegant drop shadows, and expansive typography.
-- 📸 **Batch QR Scanning**: Add multiple tokens simultaneously. Point your camera at a screen with several QR codes or select a single image containing multiple codes—FreeTotp will detect and import them all in a single action.
-- 📥 **Background Mode**: Optional "Stay in Tray" mode allows the app to keep running in the background even when the window is closed.
-- 🍏 **System Tray / Menu Bar**: Quick access to your authenticator from the macOS Menu Bar or Linux System Tray.
-- 📸 **Camera QR Scanning (Linux)**: Add new tokens seamlessly by scanning QR codes directly from your computer screen using your webcam (powered by XDG Desktop Portal & GStreamer).
-- 🖼️ **Image QR Scanning**: Add tokens by selecting a saved QR code image (PNG, JPEG, WEBP) from your hard drive.
-- 🔐 **KeePass Backend**: Your secrets are stored in a standard `.kdbx` file, meaning you can open your FreeTotp database with KeePassXC or any other KeePass client.
+- 📸 **Ultra-Robust QR Scanning**: Automatically handles dark-mode codes, transparent backgrounds, and low-contrast images via a multi-stage fallback engine.
+- 📤 **Google Authenticator Migration**: Import your entire account library in one go. FreeTotp natively decodes `otpauth-migration://` URLs exported from Google Authenticator.
+- 📥 **Background Mode**: Optional "Stay in Tray" mode allows the app to keep running in the Menu Bar (macOS) or System Tray (Linux) even when the window is closed.
 - 📋 **One-Click Copy**: Hero-sized TOTP tokens that copy to your clipboard with a single click.
-- 🍎 **macOS & Linux Native**: Cross-platform architecture that respects your OS ecosystem. (macOS users enjoy a streamlined experience without heavy `gstreamer` dependencies).
+- 🔐 **KeePass Backend**: Your secrets are stored in a standard `.kdbx` file, 100% offline and under your control.
 
 ---
 
