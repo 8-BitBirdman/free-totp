@@ -41,6 +41,8 @@ image = { version = "0.25.10", default-features = false, features = [
 open = "5.3.4" # needed for opening the default browser
 tray-icon = "0.19.2"
 google_authenticator_converter = "0.2.0"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [package.metadata.bundle]
 name = "8-BitBirdman FreeTotp"
@@ -48,9 +50,6 @@ identifier = "io.github.8-bitbirdman.FreeTotp"
 icon = ["resources/io.github.8_bitbirdman.FreeTotp.png"]
 version = "0.2.5"
 osx_category = "public.app-category.utilities"
-
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [target.'cfg(target_os = "linux")'.dependencies] # gstreamer dependencies for qr detection with camera (Unix-like systems)
 gstreamer = "0.25.1"
