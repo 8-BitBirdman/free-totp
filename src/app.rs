@@ -30,6 +30,7 @@ pub struct FreeTotp {
     now: Instant,
     screen: Screen,
     main_window_id: Option<iced::window::Id>,
+    _tray: Option<tray_icon::TrayIcon>,
 }
 
 #[derive(Debug, Clone)]
@@ -58,6 +59,36 @@ impl FreeTotp {
     pub fn new() -> (Self, Task<Message>) {
         info!("Starting app");
 
+        // Initialize tray icon here to avoid conflict with winit on macOS
+        let tray = {
+            use tray_icon::{Icon, TrayIconBuilder};
+
+            let icon_data = include_bytes!("../resources/icons/hicolor/256x256/apps/icon.png");
+            let icon = image::load_from_memory(icon_data)
+                .ok()
+                .and_then(|img| {
+                    let rgba = img.to_rgba8();
+                    let (width, height) = rgba.dimensions();
+                    Icon::from_rgba(rgba.into_raw(), width, height).ok()
+                });
+
+            let tray_menu = tray_icon::menu::Menu::new();
+            let show_item = tray_icon::menu::MenuItem::with_id("show", "Show", true, None);
+            let quit_item = tray_icon::menu::MenuItem::with_id("quit", "Quit", true, None);
+            let _ = tray_menu.append_items(&[&show_item, &tray_icon::menu::PredefinedMenuItem::separator(), &quit_item]);
+
+            if let Some(icon) = icon {
+                TrayIconBuilder::new()
+                    .with_menu(Box::new(tray_menu))
+                    .with_tooltip("FreeTotp")
+                    .with_icon(icon)
+                    .build()
+                    .ok()
+            } else {
+                None
+            }
+        };
+
         let (screen, task) = Screen::from_database_check(check_database());
         (
             Self {
@@ -66,6 +97,7 @@ impl FreeTotp {
                 now: Instant::now(),
                 screen,
                 main_window_id: None,
+                _tray: tray,
             },
             Task::perform(Config::load(APP_ID), Message::ConfigLoaded).chain(task),
         )
