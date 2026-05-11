@@ -59,6 +59,9 @@ impl FreeTotp {
     pub fn new() -> (Self, Task<Message>) {
         info!("Starting app");
 
+        // On macOS, set the app to Accessory mode so it doesn't show in the Dock
+        utils::set_activation_policy_accessory();
+
         // Initialize tray icon here to avoid conflict with winit on macOS
         let tray = {
             use tray_icon::{Icon, TrayIconBuilder};

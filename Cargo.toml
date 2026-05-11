@@ -43,6 +43,9 @@ tray-icon = "0.19.2"
 google_authenticator_converter = "0.2.0"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+ 
+ [target.'cfg(target_os = "macos")'.dependencies]
+ objc = "0.2.7"
 
 [package.metadata.bundle]
 name = "8-BitBirdman FreeTotp"
