@@ -84,5 +84,5 @@ Contributions are welcome! Whether it's a bug report, a new feature, or a UI twe
 This project is licensed under the **GNU General Public License v3.0**. See the `LICENSE` file for details.
 
 <div align="center">
-  <sub>Built with ❤️ by the Antigravity Team.</sub>
+  <sub>Built with ❤️ by the Andi.</sub>
 </div>
