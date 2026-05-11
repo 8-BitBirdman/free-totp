@@ -57,6 +57,8 @@ pub enum Message {
     OpenQrFileSelection,
     /// Callback after selecting QR files
     QrFilesSelected(Option<Vec<FileHandle>>),
+    /// Callback after processing QR files in background
+    QrFilesProcessed(Vec<InputableFreeTotpEntry>),
 
     /// Wants to show/hide the current entry qr code
     ToggleShowQRCode,
@@ -227,41 +229,48 @@ impl UpsertPage {
             }
             Message::QrFilesSelected(handles) => {
                 if let Some(file_handles) = handles {
-                    let mut valid_entries = Vec::new();
-
-                    for handle in file_handles {
-                        let result = read_qr_from_file(handle.path().to_path_buf());
-                        if let Ok(values) = result {
-                            for value in values {
-                                if let Ok(entries) = InputableFreeTotpEntry::from_url(value) {
-                                    valid_entries.extend(entries);
+                    let paths: Vec<_> = file_handles.iter().map(|h| h.path().to_path_buf()).collect();
+                    
+                    Action::Run(Task::perform(
+                        async move {
+                            let mut valid_entries = Vec::new();
+                            for path in paths {
+                                if let Ok(values) = read_qr_from_file(path) {
+                                    for value in values {
+                                        if let Ok(entries) = InputableFreeTotpEntry::from_url(value) {
+                                            valid_entries.extend(entries);
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
-
-                    if valid_entries.is_empty() {
-                        Action::AddToast(Toast::warning_toast(
-                            "No valid TOTP entries were found in the selected files",
-                        ))
-                    } else if valid_entries.len() == 1 {
-                        self.entry = valid_entries[0].clone();
-                        Action::None
-                    } else {
-                        // Batch add all and go back
-                        let entries = valid_entries
-                            .into_iter()
-                            .filter_map(|e| FreeTotpEntry::try_from(e).ok())
-                            .collect::<Vec<_>>();
-
-                        if entries.is_empty() {
-                            Action::AddToast(Toast::error_toast("Failed to process entries"))
-                        } else {
-                            Action::CreateEntries(entries)
-                        }
-                    }
+                            valid_entries
+                        },
+                        Message::QrFilesProcessed,
+                    ))
                 } else {
                     Action::None
+                }
+            }
+            Message::QrFilesProcessed(valid_entries) => {
+                if valid_entries.is_empty() {
+                    Action::AddToast(Toast::warning_toast(
+                        "No valid TOTP entries were found in the selected files",
+                    ))
+                } else if valid_entries.len() == 1 {
+                    self.entry = valid_entries[0].clone();
+                    Action::None
+                } else {
+                    // Batch add all and go back
+                    let entries = valid_entries
+                        .into_iter()
+                        .filter_map(|e| FreeTotpEntry::try_from(e).ok())
+                        .collect::<Vec<_>>();
+
+                    if entries.is_empty() {
+                        Action::AddToast(Toast::error_toast("Failed to process entries"))
+                    } else {
+                        Action::CreateEntries(entries)
+                    }
                 }
             }
 
