@@ -55,8 +55,8 @@ pub enum Message {
 
     /// Opens the dialog to select a QR file
     OpenQrFileSelection,
-    /// Callback after selecting a QR file
-    QrFileSelected(Option<FileHandle>),
+    /// Callback after selecting QR files
+    QrFilesSelected(Option<Vec<FileHandle>>),
 
     /// Wants to show/hide the current entry qr code
     ToggleShowQRCode,
@@ -216,55 +216,53 @@ impl UpsertPage {
                             AsyncFileDialog::new()
                                 .add_filter("Image Files", &["png", "jpeg", "jpg", "webp"])
                                 .set_directory(dirs::download_dir().unwrap_or("/".into()))
-                                .pick_file()
+                                .pick_files()
                                 .await
                         },
-                        Message::QrFileSelected,
+                        Message::QrFilesSelected,
                     ))
                 } else {
                     Action::None
                 }
             }
-            Message::QrFileSelected(handle) => {
-                if let Some(file_handle) = handle {
-                    let result = read_qr_from_file(file_handle.path().to_path_buf());
-                    return match result {
-                        Ok(values) => {
-                            let mut valid_entries = Vec::new();
+            Message::QrFilesSelected(handles) => {
+                if let Some(file_handles) = handles {
+                    let mut valid_entries = Vec::new();
+
+                    for handle in file_handles {
+                        let result = read_qr_from_file(handle.path().to_path_buf());
+                        if let Ok(values) = result {
                             for value in values {
                                 if let Ok(entries) = InputableFreeTotpEntry::from_url(value) {
                                     valid_entries.extend(entries);
                                 }
                             }
-
-                            if valid_entries.is_empty() {
-                                Action::AddToast(Toast::warning_toast(
-                                    "QR Detected but no valid TOTP entries were found",
-                                ))
-                            } else if valid_entries.len() == 1 {
-                                self.entry = valid_entries[0].clone();
-                                Action::None
-                            } else {
-                                // Batch add all and go back
-                                let entries = valid_entries
-                                    .into_iter()
-                                    .filter(|e| e.valid())
-                                    .filter_map(|e| FreeTotpEntry::try_from(e).ok())
-                                    .collect::<Vec<_>>();
-
-                                if entries.is_empty() {
-                                    Action::AddToast(Toast::warning_toast(
-                                        "Detected entries could not be converted",
-                                    ))
-                                } else {
-                                    Action::CreateEntries(entries)
-                                }
-                            }
                         }
-                        Err(e) => Action::AddToast(Toast::error_toast(e)),
-                    };
+                    }
+
+                    if valid_entries.is_empty() {
+                        Action::AddToast(Toast::warning_toast(
+                            "No valid TOTP entries were found in the selected files",
+                        ))
+                    } else if valid_entries.len() == 1 {
+                        self.entry = valid_entries[0].clone();
+                        Action::None
+                    } else {
+                        // Batch add all and go back
+                        let entries = valid_entries
+                            .into_iter()
+                            .filter_map(|e| FreeTotpEntry::try_from(e).ok())
+                            .collect::<Vec<_>>();
+
+                        if entries.is_empty() {
+                            Action::AddToast(Toast::error_toast("Failed to process entries"))
+                        } else {
+                            Action::CreateEntries(entries)
+                        }
+                    }
+                } else {
+                    Action::None
                 }
-                Action::None
             }
 
             Message::ToggleShowQRCode => {
