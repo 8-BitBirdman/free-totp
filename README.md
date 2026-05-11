@@ -47,7 +47,7 @@ Ensure you have the latest stable version of Rust and Cargo installed via `rustu
 
 ```bash
 # Clone the repository
-git clone https://github.com/antigravity/free-totp.git
+git clone https://github.com/8-BitBirdman/free-totp.git
 cd free-totp
 
 # Build and run the application natively
