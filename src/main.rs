@@ -8,6 +8,7 @@ mod config;
 mod icons;
 
 const APP_ID: &str = "io.github.8_bitbirdman.FreeTotp";
+pub const APP_ICON: &[u8] = include_bytes!("../resources/icons/hicolor/scalable/apps/icon.svg");
 
 /// SEE: https://github.com/pop-os/cosmic-bg/pull/73
 /// Access glibc malloc tunables.
