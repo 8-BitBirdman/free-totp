@@ -44,20 +44,29 @@ The easiest and most secure way to install FreeTotp on Linux is via Flatpak.
 flatpak-builder --user --install build-dir io.github.8_bitbirdman.FreeTotp.yaml --force-clean
 ```
 
-### 🍎 macOS & Other Platforms (Build from Source)
-
-Ensure you have the latest stable version of Rust and Cargo installed via `rustup`.
+### 🍎 macOS (App Bundle - Recommended)
+To run the app as a standalone macOS application without a terminal window:
 
 ```bash
 # Clone the repository
 git clone https://github.com/8-BitBirdman/free-totp.git
 cd free-totp
 
+# Build the .app bundle
+cargo install cargo-bundle
+just bundle-mac
+```
+The application will be located in `target/release/bundle/osx/8-BitBirdman FreeTotp.app`.
+
+### 🛠️ Build from Source (All Platforms)
+Ensure you have the latest stable version of Rust and Cargo installed via `rustup`.
+
+```bash
 # Build and run the application natively
 cargo run --release
 ```
 
-> **Note for macOS Users:** FreeTotp intelligently bypasses Linux-specific Flatpak camera portal dependencies (`gstreamer`, `ashpd`) on macOS, allowing for a fast, native compile out of the box!
+> **Pro Tip:** FreeTotp features an **Ultra-Robust QR Engine** that automatically handles dark-mode codes, transparent backgrounds, and multi-account Google Migration exports. If your QR scan fails initially, the app will automatically try 6 different image processing techniques to ensure a successful detection!
 
 ---
 
