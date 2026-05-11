@@ -83,6 +83,8 @@ pub enum Action {
     UpdateEntry(FreeTotpEntry),
     /// Ask the parent to create the given [`FreeTotpEntry`]
     CreateEntry(FreeTotpEntry),
+    /// Ask the parent to create multiple [`FreeTotpEntry`]
+    CreateEntries(Vec<FreeTotpEntry>),
     /// Ask the parent to delete the [`FreeTotpEntry`] with the give [`uuid::Uuid`]
     DeleteEntry(uuid::Uuid),
 }
@@ -130,7 +132,7 @@ impl UpsertPage {
                 .into()
             }
             #[cfg(target_os = "linux")]
-            SubScreen::ScanQrPage(qr_scan_page) => qr_scan_page.view(now).map(Message::ScanQrPage),
+            SubScreen::ScanQrPage(qr_scan_page) => qr_scan_page.view(_now).map(Message::ScanQrPage),
         }
     }
 
@@ -227,14 +229,36 @@ impl UpsertPage {
                 if let Some(file_handle) = handle {
                     let result = read_qr_from_file(file_handle.path().to_path_buf());
                     return match result {
-                        Ok(value) => {
-                            let conv_result = InputableFreeTotpEntry::from_url(value);
-                            match conv_result {
-                                Ok(entry) => {
-                                    self.entry = entry;
-                                    Action::None
+                        Ok(values) => {
+                            let mut valid_entries = Vec::new();
+                            for value in values {
+                                if let Ok(entry) = InputableFreeTotpEntry::from_url(value) {
+                                    valid_entries.push(entry);
                                 }
-                                Err(e) => Action::AddToast(Toast::error_toast(e)),
+                            }
+
+                            if valid_entries.is_empty() {
+                                Action::AddToast(Toast::warning_toast(
+                                    "QR Detected but no valid TOTP entries were found",
+                                ))
+                            } else if valid_entries.len() == 1 {
+                                self.entry = valid_entries[0].clone();
+                                Action::None
+                            } else {
+                                // Batch add all and go back
+                                let entries = valid_entries
+                                    .into_iter()
+                                    .filter(|e| e.valid())
+                                    .filter_map(|e| FreeTotpEntry::try_from(e).ok())
+                                    .collect::<Vec<_>>();
+
+                                if entries.is_empty() {
+                                    Action::AddToast(Toast::warning_toast(
+                                        "Detected entries could not be converted",
+                                    ))
+                                } else {
+                                    Action::CreateEntries(entries)
+                                }
                             }
                         }
                         Err(e) => Action::AddToast(Toast::error_toast(e)),
@@ -256,7 +280,7 @@ impl UpsertPage {
                     return Action::None;
                 };
 
-                match scan_qr_page.update(message, now) {
+                match scan_qr_page.update(message, _now) {
                     scan_qr::Action::None => Action::None,
                     scan_qr::Action::Back => {
                         self.subscreen = SubScreen::UpsertPage;
@@ -267,13 +291,32 @@ impl UpsertPage {
                         self.subscreen = SubScreen::UpsertPage;
                         Action::AddToast(toast)
                     }
-                    scan_qr::Action::EntryDetected(entry) => {
-                        self.entry = entry;
-                        self.subscreen = SubScreen::UpsertPage;
-                        Action::AddToast(Toast::success_toast(format!(
-                            "Code detected correctly for: {}",
-                            &self.entry.account_name
-                        )))
+                    scan_qr::Action::EntriesDetected(entries) => {
+                        if entries.len() == 1 {
+                            self.entry = entries[0].clone();
+                            self.subscreen = SubScreen::UpsertPage;
+                            Action::AddToast(Toast::success_toast(format!(
+                                "Code detected correctly for: {}",
+                                &self.entry.account_name
+                            )))
+                        } else {
+                            // Convert and batch add
+                            let converted_entries = entries
+                                .into_iter()
+                                .filter(|e| e.valid())
+                                .filter_map(|e| FreeTotpEntry::try_from(e).ok())
+                                .collect::<Vec<_>>();
+
+                            if converted_entries.is_empty() {
+                                self.subscreen = SubScreen::UpsertPage;
+                                Action::AddToast(Toast::warning_toast(
+                                    "Detected entries could not be converted",
+                                ))
+                            } else {
+                                let count = converted_entries.len();
+                                Action::CreateEntries(converted_entries)
+                            }
+                        }
                     }
                 }
             }
@@ -296,7 +339,7 @@ impl UpsertPage {
             SubScreen::UpsertPage => event::listen_with(handle_event),
             #[cfg(target_os = "linux")]
             SubScreen::ScanQrPage(qr_scan_page) => {
-                qr_scan_page.subscription(now).map(Message::ScanQrPage)
+                qr_scan_page.subscription(_now).map(Message::ScanQrPage)
             }
         }
     }

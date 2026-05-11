@@ -29,6 +29,7 @@ pub struct FreeTotp {
     config: Arc<Mutex<Config>>,
     now: Instant,
     screen: Screen,
+    main_window_id: Option<iced::window::Id>,
 }
 
 #[derive(Debug, Clone)]
@@ -45,6 +46,12 @@ pub enum Message {
     UnlockDatabase(unlock::Message),
     /// Homepage [`Screen`] Messages
     HomePage(homepage::Message),
+    /// Tray icon events
+    TrayIconEvent(tray_icon::TrayIconEvent),
+    /// Tray menu events
+    MenuEvent(tray_icon::menu::MenuEvent),
+    /// Window events (for intercepting close)
+    WindowEvent(iced::window::Id, iced::Event),
 }
 
 impl FreeTotp {
@@ -58,6 +65,7 @@ impl FreeTotp {
                 config: Arc::from(Mutex::new(Config::default())),
                 now: Instant::now(),
                 screen,
+                main_window_id: None,
             },
             Task::perform(Config::load(APP_ID), Message::ConfigLoaded).chain(task),
         )
@@ -140,6 +148,53 @@ impl FreeTotp {
                     ]),
                 }
             }
+            Message::TrayIconEvent(event) => {
+                if let tray_icon::TrayIconEvent::Click { .. } = event {
+                    if let Some(id) = self.main_window_id {
+                        return Task::batch([
+                            iced::window::set_mode(id, iced::window::Mode::Windowed),
+                            iced::window::gain_focus(id),
+                        ]);
+                    }
+                }
+                Task::none()
+            }
+            Message::MenuEvent(event) => {
+                match event.id.0.as_str() {
+                    "show" => {
+                        if let Some(id) = self.main_window_id {
+                            return Task::batch([
+                                iced::window::set_mode(id, iced::window::Mode::Windowed),
+                                iced::window::gain_focus(id),
+                            ]);
+                        }
+                    }
+                    "quit" => {
+                        if let Some(id) = self.main_window_id {
+                            return iced::window::close(id);
+                        } else {
+                            // If we don't have the window ID yet, just exit
+                            std::process::exit(0);
+                        }
+                    }
+                    _ => {}
+                }
+                Task::none()
+            }
+            Message::WindowEvent(id, event) => {
+                if self.main_window_id.is_none() {
+                    self.main_window_id = Some(id);
+                }
+
+                if let iced::Event::Window(iced::window::Event::CloseRequested) = event {
+                    let stay_on_tray =
+                        self.config.lock().map(|c| c.stay_on_tray).unwrap_or_default();
+                    if stay_on_tray {
+                        return iced::window::set_mode(id, iced::window::Mode::Hidden);
+                    }
+                }
+                Task::none()
+            }
         }
     }
 
@@ -159,16 +214,46 @@ impl FreeTotp {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
+        let mut subscriptions = vec![
+            iced::event::listen_with(|event, _status, id| Some(Message::WindowEvent(id, event))),
+            iced::Subscription::run(|| {
+                iced::futures::stream::unfold((), |_| async {
+                    let event =
+                        smol::unblock(|| tray_icon::TrayIconEvent::receiver().recv().ok()).await?;
+                    Some((Message::TrayIconEvent(event), ()))
+                })
+            }),
+            iced::Subscription::run(|| {
+                iced::futures::stream::unfold((), |_| async {
+                    let event =
+                        smol::unblock(|| tray_icon::menu::MenuEvent::receiver().recv().ok()).await?;
+                    Some((Message::MenuEvent(event), ()))
+                })
+            }),
+        ];
+
         match &self.screen {
-            Screen::Error(_) => Subscription::none(),
-            Screen::CreateDatabase(create_database) => create_database
-                .subscription(self.now)
-                .map(Message::CreateDatabase),
-            Screen::UnlockDatabase(unlock_database) => unlock_database
-                .subscription(self.now)
-                .map(Message::UnlockDatabase),
-            Screen::HomePage(homepage) => homepage.subscription(self.now).map(Message::HomePage),
+            Screen::Error(_) => {}
+            Screen::CreateDatabase(create_database) => {
+                subscriptions.push(
+                    create_database
+                        .subscription(self.now)
+                        .map(Message::CreateDatabase),
+                );
+            }
+            Screen::UnlockDatabase(unlock_database) => {
+                subscriptions.push(
+                    unlock_database
+                        .subscription(self.now)
+                        .map(Message::UnlockDatabase),
+                );
+            }
+            Screen::HomePage(homepage) => {
+                subscriptions.push(homepage.subscription(self.now).map(Message::HomePage));
+            }
         }
+
+        Subscription::batch(subscriptions)
     }
 
     pub fn theme(&self) -> Theme {

@@ -136,6 +136,10 @@ impl FreeTotpDatabase {
     }
 
     pub async fn add_entry(&self, entry: FreeTotpEntry) -> Result<(), anywho::Error> {
+        self.add_entries(vec![entry]).await
+    }
+
+    pub async fn add_entries(&self, entries: Vec<FreeTotpEntry>) -> Result<(), anywho::Error> {
         let lock = self.lock.clone();
 
         let path = self.path.clone();
@@ -155,9 +159,11 @@ impl FreeTotpDatabase {
             let mut target_group = root
                 .group_by_name_mut("Default Group")
                 .ok_or_else(|| anywho!("Default Group not found"))?;
-            let mut keepass_entry = target_group.add_entry();
 
-            update_free_totp_entry_in_keepass(entry, &mut keepass_entry);
+            for entry in entries {
+                let mut keepass_entry = target_group.add_entry();
+                update_free_totp_entry_in_keepass(entry, &mut keepass_entry);
+            }
 
             db.save(
                 &mut std::fs::File::create(&*path)?,
@@ -262,16 +268,14 @@ impl FreeTotpDatabase {
         let content = std::fs::read_to_string(&file_path)
             .map_err(|e| anywho!("Failed to read import file: {}", e))?;
 
+        let mut entries_to_import = Vec::new();
+
         for line in content.lines() {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
 
-            // we use from_url unchecked because of the same reason we can't use TOTP::new
-            // Don't use TOTP::new() because it enforces validation and some secrets (ej: microsoft)
-            // that are xxxx xxxx xxxx xxxx will fail here if we use ::new() with error:
-            // Failed to construct TOTP object: The length of the shared secret MUST be at least 128 bits. 80 bits is not enough
             match totp_rs::TOTP::from_url_unchecked(line) {
                 Ok(totp) => {
                     let name = if totp.account_name.trim().is_empty() {
@@ -280,18 +284,20 @@ impl FreeTotpDatabase {
                         totp.account_name.clone()
                     };
 
-                    let entry = FreeTotpEntry {
+                    entries_to_import.push(FreeTotpEntry {
                         id: None,
                         name,
                         totp,
-                    };
-
-                    self.add_entry(entry).await?;
+                    });
                 }
                 Err(e) => {
                     warn!("Warning: Failed to parse TOTP URL '{}': {}", line, e);
                 }
             }
+        }
+
+        if !entries_to_import.is_empty() {
+            self.add_entries(entries_to_import).await?;
         }
 
         Ok(())

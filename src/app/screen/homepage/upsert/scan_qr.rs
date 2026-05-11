@@ -72,7 +72,7 @@ pub enum Message {
     /// Callback after asking for camera permission
     PermissionCallback(Result<Arc<OwnedFd>, anywho::Error>),
     /// Callback after a QR is detected with the QR contents
-    QrDetected(String),
+    QrDetected(Vec<String>),
     /// Updates the frame to be displayed
     UpdateDisplayFrame(Box<image::Handle>),
 }
@@ -87,7 +87,7 @@ pub enum Action {
     /// Add a new [`Toast`] to show and goes back
     AddToastAndBack(Toast),
     /// Callback after an entry has been detected
-    EntryDetected(InputableFreeTotpEntry),
+    EntriesDetected(Vec<InputableFreeTotpEntry>),
 }
 
 #[derive(Debug)]
@@ -162,12 +162,22 @@ impl QrScanPage {
                 },
                 Err(err) => Action::AddToastAndBack(Toast::error_toast(err)),
             },
-            Message::QrDetected(data) => match InputableFreeTotpEntry::from_url(data) {
-                Ok(entry) => Action::EntryDetected(entry),
-                Err(_) => Action::AddToast(Toast::warning_toast(
-                    "QR Detected but it could not be decoded into an entry",
-                )),
-            },
+            Message::QrDetected(data_vec) => {
+                let mut entries = Vec::new();
+                for data in data_vec {
+                    if let Ok(entry) = InputableFreeTotpEntry::from_url(data) {
+                        entries.push(entry);
+                    }
+                }
+
+                if !entries.is_empty() {
+                    Action::EntriesDetected(entries)
+                } else {
+                    Action::AddToast(Toast::warning_toast(
+                        "QR Detected but no valid TOTP entries were found",
+                    ))
+                }
+            }
             Message::UpdateDisplayFrame(handle) => {
                 if let State::Permitted(state) = &mut self.state {
                     state.display_frame = Some(handle);
@@ -365,9 +375,11 @@ impl QrScanPage {
 
                             let res = smol::unblock(move || Self::decode_qr(frame_to_decode)).await;
 
-                            if let Some(content) = res {
-                                let _ = output.send(Message::QrDetected(content)).await;
-                                last_check = std::time::Instant::now();
+                            if let Some(contents) = res {
+                                if !contents.is_empty() {
+                                    let _ = output.send(Message::QrDetected(contents)).await;
+                                    last_check = std::time::Instant::now();
+                                }
                             }
                         }
                     }
@@ -378,17 +390,24 @@ impl QrScanPage {
         })
     }
 
-    fn decode_qr(frame: FrameData) -> Option<String> {
+    fn decode_qr(frame: FrameData) -> Option<Vec<String>> {
         let mut img = rqrr::PreparedImage::prepare_from_greyscale(
             frame.width as usize,
             frame.height as usize,
             |x, y| frame.data[y * frame.width as usize + x],
         );
 
-        img.detect_grids()
-            .first()
-            .and_then(|grid| grid.decode().ok())
-            .map(|(_, content)| content)
+        let contents: Vec<String> = img
+            .detect_grids()
+            .into_iter()
+            .filter_map(|grid| grid.decode().ok().map(|(_, content)| content))
+            .collect();
+
+        if contents.is_empty() {
+            None
+        } else {
+            Some(contents)
+        }
     }
 }
 

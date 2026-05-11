@@ -1,11 +1,11 @@
 [package]
 name = "free-totp"
 description = "TOTP client made with Iced"
-authors = ["antigravity <kysdev.owjga@aleeas.com>"]
+authors = ["8-BitBirdman <kysdev.owjga@aleeas.com>"]
 version = "0.2.5"
 edition = "2024"
 license = "GPL-3.0"
-repository = "https://github.com/antigravity/free-totp"
+repository = "https://github.com/8-BitBirdman/free-totp"
 
 [dependencies]
 iced = { git = "https://github.com/iced-rs/iced", default-features = true, features = [
@@ -39,6 +39,7 @@ image = { version = "0.25.10", default-features = false, features = [
     "rayon",
 ] } # needed for qr detection
 open = "5.3.4" # needed for opening the default browser
+tray-icon = "0.19.2"
 
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

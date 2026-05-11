@@ -22,6 +22,9 @@ Under the hood, FreeTotp uses a highly secure, encrypted **KeePass (.kdbx)** dat
 ## ✨ Features
 
 - 🎨 **Premium UI/UX**: A gorgeous, newly overhauled user interface featuring soft radiuses, elegant drop shadows, and expansive typography.
+- 📸 **Batch QR Scanning**: Add multiple tokens simultaneously. Point your camera at a screen with several QR codes or select a single image containing multiple codes—FreeTotp will detect and import them all in a single action.
+- 📥 **Background Mode**: Optional "Stay in Tray" mode allows the app to keep running in the background even when the window is closed.
+- 🍏 **System Tray / Menu Bar**: Quick access to your authenticator from the macOS Menu Bar or Linux System Tray.
 - 📸 **Camera QR Scanning (Linux)**: Add new tokens seamlessly by scanning QR codes directly from your computer screen using your webcam (powered by XDG Desktop Portal & GStreamer).
 - 🖼️ **Image QR Scanning**: Add tokens by selecting a saved QR code image (PNG, JPEG, WEBP) from your hard drive.
 - 🔐 **KeePass Backend**: Your secrets are stored in a standard `.kdbx` file, meaning you can open your FreeTotp database with KeePassXC or any other KeePass client.
@@ -38,7 +41,7 @@ The easiest and most secure way to install FreeTotp on Linux is via Flatpak.
 
 ```bash
 # Build and install locally
-flatpak-builder --user --install build-dir dev.antigravity.FreeTotp.yaml --force-clean
+flatpak-builder --user --install build-dir io.github.8_bitbirdman.FreeTotp.yaml --force-clean
 ```
 
 ### 🍎 macOS & Other Platforms (Build from Source)
@@ -84,5 +87,5 @@ Contributions are welcome! Whether it's a bug report, a new feature, or a UI twe
 This project is licensed under the **GNU General Public License v3.0**. See the `LICENSE` file for details.
 
 <div align="center">
-  <sub>Built with ❤️ by Andi.</sub>
+  <sub>Built with ❤️ by the FreeTotp contributors.</sub>
 </div>

@@ -1,5 +1,5 @@
 name := 'free-totp'
-appid := 'dev.antigravity.FreeTotp'
+appid := 'io.github.8_bitbirdman.FreeTotp'
 
 rootdir := ''
 prefix := '/usr'

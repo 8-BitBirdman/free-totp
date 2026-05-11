@@ -10,7 +10,6 @@ pub(crate) static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct IconCacheKey {
     name: &'static str,
-    size: u16,
 }
 
 pub struct IconCache {
@@ -28,7 +27,6 @@ impl IconCache {
                 cache.insert(
                     IconCacheKey {
                         name: $name,
-                        size: $size,
                     },
                     svg::Handle::from_memory(data),
                 );
@@ -40,7 +38,6 @@ impl IconCache {
         bundle!("list-add-symbolic", 21);
         bundle!("edit-copy-symbolic", 21);
         bundle!("go-previous-symbolic", 21);
-        bundle!("list-add-symbolic", 21);
         bundle!("user-trash-full-symbolic", 21);
         bundle!("document-export-symbolic", 21);
         bundle!("document-import-symbolic", 21);
@@ -51,18 +48,18 @@ impl IconCache {
         Self { cache }
     }
 
-    fn get_handle(&mut self, name: &'static str, size: u16) -> svg::Handle {
+    fn get_handle(&mut self, name: &'static str) -> svg::Handle {
         self.cache
-            .entry(IconCacheKey { name, size })
-            .or_insert_with(|| svg::Handle::from_memory(name.as_bytes()))
-            .clone()
+            .get(&IconCacheKey { name })
+            .cloned()
+            .unwrap_or_else(|| svg::Handle::from_memory("<svg></svg>".as_bytes()))
     }
 }
 
 pub fn get_icon(name: &'static str, size: u16) -> svg::Svg<'static> {
     let handle = {
         let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
-        icon_cache.get_handle(name, size)
+        icon_cache.get_handle(name)
     };
 
     svg::Svg::new(handle)

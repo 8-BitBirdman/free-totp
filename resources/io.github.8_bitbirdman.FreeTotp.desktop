@@ -5,6 +5,6 @@ Exec=free-totp %F
 Terminal=false
 Type=Application
 StartupNotify=true
-Icon=dev.antigravity.FreeTotp
+Icon=io.github.8_bitbirdman.FreeTotp
 Categories=Utility;
 Keywords=Tool;TOTP;Authenticator;2FA;OTP;Code;

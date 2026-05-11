@@ -61,6 +61,8 @@ pub enum Message {
     OpenUpsertPage(Option<FreeTotpEntry>),
     /// Callback after upserting a [`FreeTotpEntry`]
     EntryUpserted(Result<(), anywho::Error>),
+    /// Callback after batch upserting multiple [`FreeTotpEntry`]
+    BatchEntriesUpserted(Result<usize, anywho::Error>),
 
     /// Messages of the [`SettingsPage`]
     SettingsPage(settings::Message),
@@ -190,6 +192,19 @@ impl HomePage {
                             Message::EntryUpserted,
                         ))
                     }
+                    upsert::Action::CreateEntries(free_totp_entries) => {
+                        let db_clone = Arc::clone(&self.database);
+                        let count = free_totp_entries.len();
+                        Action::Run(Task::perform(
+                            async move {
+                                db_clone
+                                    .add_entries(free_totp_entries)
+                                    .await
+                                    .map(|_| count)
+                            },
+                            Message::BatchEntriesUpserted,
+                        ))
+                    }
                     upsert::Action::DeleteEntry(uuid) => {
                         let db_clone = Arc::clone(&self.database);
                         Action::Run(Task::perform(
@@ -210,6 +225,29 @@ impl HomePage {
             }
             Message::EntryUpserted(result) => match result {
                 Ok(_) => self.update(Message::LoadEntries, now),
+                Err(err) => {
+                    self.state = State::Loading;
+                    let db_clone = Arc::clone(&self.database);
+                    Action::RunAndToast(
+                        Task::perform(
+                            async move { db_clone.list_entries().await },
+                            Message::EntriesLoaded,
+                        ),
+                        Toast::error_toast(err),
+                    )
+                }
+            },
+            Message::BatchEntriesUpserted(result) => match result {
+                Ok(count) => {
+                    let action = self.update(Message::LoadEntries, now);
+                    match action {
+                        Action::Run(task) => Action::RunAndToast(
+                            task,
+                            Toast::success_toast(format!("Successfully imported {} entries", count)),
+                        ),
+                        _ => action,
+                    }
+                }
                 Err(err) => {
                     self.state = State::Loading;
                     let db_clone = Arc::clone(&self.database);
@@ -313,14 +351,36 @@ fn header_view<'a>(entry_count: usize) -> Element<'a, Message> {
         space().width(Length::Fill),
         // Action buttons
         row![
-            button(icons::get_icon("list-add-symbolic", 24))
+            iced::widget::tooltip(
+                button(
+                    icons::get_icon("list-add-symbolic", 24).style(|theme, _status| {
+                        let style = style::primary_button(theme, iced::widget::button::Status::Active);
+                        iced::widget::svg::Style {
+                            color: Some(style.text_color),
+                        }
+                    })
+                )
                 .on_press(Message::OpenUpsertPage(None))
                 .padding(10)
                 .style(style::primary_button),
-            button(icons::get_icon("emblem-system-symbolic", 24))
+                "Add New Entry",
+                iced::widget::tooltip::Position::Bottom
+            ),
+            iced::widget::tooltip(
+                button(
+                    icons::get_icon("emblem-system-symbolic", 24).style(|theme, _status| {
+                        let style = style::secondary_button(theme, iced::widget::button::Status::Active);
+                        iced::widget::svg::Style {
+                            color: Some(style.text_color),
+                        }
+                    })
+                )
                 .on_press(Message::OpenSettingsPage)
                 .padding(10)
                 .style(style::secondary_button),
+                "Settings",
+                iced::widget::tooltip::Position::Bottom
+            ),
         ]
         .spacing(style::spacing::MEDIUM)
     ]

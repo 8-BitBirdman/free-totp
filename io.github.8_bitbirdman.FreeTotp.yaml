@@ -1,4 +1,4 @@
-app-id: dev.antigravity.FreeTotp
+app-id: io.github.8_bitbirdman.FreeTotp
 # Note: No additional GStreamer plugins needed - app uses pipewiresrc which is
 # included in org.freedesktop.Platform via PipeWire's gst-plugin-pipewire
 runtime: org.freedesktop.Platform
@@ -24,10 +24,10 @@ modules:
       - cargo --offline fetch --manifest-path Cargo.toml --verbose
       - cargo --offline build --release --verbose
       - install -Dm0755 ./target/release/free-totp /app/bin/free-totp
-      - install -Dm0644 ./resources/dev.antigravity.FreeTotp.desktop /app/share/applications/dev.antigravity.FreeTotp.desktop
-      - install -Dm0644 ./resources/dev.antigravity.FreeTotp.metainfo.xml /app/share/metainfo/dev.antigravity.FreeTotp.metainfo.xml
-      - install -Dm0644 ./resources/icons/hicolor/256x256/apps/icon.png /app/share/icons/hicolor/256x256/apps/dev.antigravity.FreeTotp.png
-      - install -Dm0644 ./resources/icons/hicolor/scalable/apps/icon.svg /app/share/icons/hicolor/scalable/apps/dev.antigravity.FreeTotp.svg
+      - install -Dm0644 ./resources/io.github.8_bitbirdman.FreeTotp.desktop /app/share/applications/io.github.8_bitbirdman.FreeTotp.desktop
+      - install -Dm0644 ./resources/io.github.8_bitbirdman.FreeTotp.metainfo.xml /app/share/metainfo/io.github.8_bitbirdman.FreeTotp.metainfo.xml
+      - install -Dm0644 ./resources/icons/hicolor/256x256/apps/icon.png /app/share/icons/hicolor/256x256/apps/io.github.8_bitbirdman.FreeTotp.png
+      - install -Dm0644 ./resources/icons/hicolor/scalable/apps/icon.svg /app/share/icons/hicolor/scalable/apps/io.github.8_bitbirdman.FreeTotp.svg
     sources:
       - type: dir
         path: .

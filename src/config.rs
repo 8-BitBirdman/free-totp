@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
-    pub theme: ColockodeTheme,
+    pub theme: FreeTotpTheme,
+    #[serde(default)]
+    pub stay_on_tray: bool,
 }
 
 impl Config {
@@ -87,7 +89,7 @@ impl Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
-pub enum ColockodeTheme {
+pub enum FreeTotpTheme {
     Light,
     Dark,
     Dracula,
@@ -113,63 +115,63 @@ pub enum ColockodeTheme {
     Ferra,
 }
 
-impl From<ColockodeTheme> for Theme {
-    fn from(config_theme: ColockodeTheme) -> Self {
+impl From<FreeTotpTheme> for Theme {
+    fn from(config_theme: FreeTotpTheme) -> Self {
         match config_theme {
-            ColockodeTheme::Light => Theme::Light,
-            ColockodeTheme::Dark => Theme::Dark,
-            ColockodeTheme::Dracula => Theme::Dracula,
-            ColockodeTheme::Nord => Theme::Nord,
-            ColockodeTheme::SolarizedLight => Theme::SolarizedLight,
-            ColockodeTheme::SolarizedDark => Theme::SolarizedDark,
-            ColockodeTheme::GruvboxLight => Theme::GruvboxLight,
-            ColockodeTheme::GruvboxDark => Theme::GruvboxDark,
-            ColockodeTheme::CatppuccinLatte => Theme::CatppuccinLatte,
-            ColockodeTheme::CatppuccinFrappe => Theme::CatppuccinFrappe,
-            ColockodeTheme::CatppuccinMacchiato => Theme::CatppuccinMacchiato,
-            ColockodeTheme::CatppuccinMocha => Theme::CatppuccinMocha,
-            ColockodeTheme::TokyoNight => Theme::TokyoNight,
-            ColockodeTheme::TokyoNightStorm => Theme::TokyoNightStorm,
-            ColockodeTheme::TokyoNightLight => Theme::TokyoNightLight,
-            ColockodeTheme::KanagawaWave => Theme::KanagawaWave,
-            ColockodeTheme::KanagawaDragon => Theme::KanagawaDragon,
-            ColockodeTheme::KanagawaLotus => Theme::KanagawaLotus,
-            ColockodeTheme::Moonfly => Theme::Moonfly,
-            ColockodeTheme::Nightfly => Theme::Nightfly,
-            ColockodeTheme::Oxocarbon => Theme::Oxocarbon,
-            ColockodeTheme::Ferra => Theme::Ferra,
+            FreeTotpTheme::Light => Theme::Light,
+            FreeTotpTheme::Dark => Theme::Dark,
+            FreeTotpTheme::Dracula => Theme::Dracula,
+            FreeTotpTheme::Nord => Theme::Nord,
+            FreeTotpTheme::SolarizedLight => Theme::SolarizedLight,
+            FreeTotpTheme::SolarizedDark => Theme::SolarizedDark,
+            FreeTotpTheme::GruvboxLight => Theme::GruvboxLight,
+            FreeTotpTheme::GruvboxDark => Theme::GruvboxDark,
+            FreeTotpTheme::CatppuccinLatte => Theme::CatppuccinLatte,
+            FreeTotpTheme::CatppuccinFrappe => Theme::CatppuccinFrappe,
+            FreeTotpTheme::CatppuccinMacchiato => Theme::CatppuccinMacchiato,
+            FreeTotpTheme::CatppuccinMocha => Theme::CatppuccinMocha,
+            FreeTotpTheme::TokyoNight => Theme::TokyoNight,
+            FreeTotpTheme::TokyoNightStorm => Theme::TokyoNightStorm,
+            FreeTotpTheme::TokyoNightLight => Theme::TokyoNightLight,
+            FreeTotpTheme::KanagawaWave => Theme::KanagawaWave,
+            FreeTotpTheme::KanagawaDragon => Theme::KanagawaDragon,
+            FreeTotpTheme::KanagawaLotus => Theme::KanagawaLotus,
+            FreeTotpTheme::Moonfly => Theme::Moonfly,
+            FreeTotpTheme::Nightfly => Theme::Nightfly,
+            FreeTotpTheme::Oxocarbon => Theme::Oxocarbon,
+            FreeTotpTheme::Ferra => Theme::Ferra,
         }
     }
 }
 
 /// Will fail for custom themes
-impl TryFrom<&Theme> for ColockodeTheme {
+impl TryFrom<&Theme> for FreeTotpTheme {
     type Error = &'static str;
 
     fn try_from(theme: &Theme) -> Result<Self, Self::Error> {
         match theme {
-            Theme::Light => Ok(ColockodeTheme::Light),
-            Theme::Dark => Ok(ColockodeTheme::Dark),
-            Theme::Dracula => Ok(ColockodeTheme::Dracula),
-            Theme::Nord => Ok(ColockodeTheme::Nord),
-            Theme::SolarizedLight => Ok(ColockodeTheme::SolarizedLight),
-            Theme::SolarizedDark => Ok(ColockodeTheme::SolarizedDark),
-            Theme::GruvboxLight => Ok(ColockodeTheme::GruvboxLight),
-            Theme::GruvboxDark => Ok(ColockodeTheme::GruvboxDark),
-            Theme::CatppuccinLatte => Ok(ColockodeTheme::CatppuccinLatte),
-            Theme::CatppuccinFrappe => Ok(ColockodeTheme::CatppuccinFrappe),
-            Theme::CatppuccinMacchiato => Ok(ColockodeTheme::CatppuccinMacchiato),
-            Theme::CatppuccinMocha => Ok(ColockodeTheme::CatppuccinMocha),
-            Theme::TokyoNight => Ok(ColockodeTheme::TokyoNight),
-            Theme::TokyoNightStorm => Ok(ColockodeTheme::TokyoNightStorm),
-            Theme::TokyoNightLight => Ok(ColockodeTheme::TokyoNightLight),
-            Theme::KanagawaWave => Ok(ColockodeTheme::KanagawaWave),
-            Theme::KanagawaDragon => Ok(ColockodeTheme::KanagawaDragon),
-            Theme::KanagawaLotus => Ok(ColockodeTheme::KanagawaLotus),
-            Theme::Moonfly => Ok(ColockodeTheme::Moonfly),
-            Theme::Nightfly => Ok(ColockodeTheme::Nightfly),
-            Theme::Oxocarbon => Ok(ColockodeTheme::Oxocarbon),
-            Theme::Ferra => Ok(ColockodeTheme::Ferra),
+            Theme::Light => Ok(FreeTotpTheme::Light),
+            Theme::Dark => Ok(FreeTotpTheme::Dark),
+            Theme::Dracula => Ok(FreeTotpTheme::Dracula),
+            Theme::Nord => Ok(FreeTotpTheme::Nord),
+            Theme::SolarizedLight => Ok(FreeTotpTheme::SolarizedLight),
+            Theme::SolarizedDark => Ok(FreeTotpTheme::SolarizedDark),
+            Theme::GruvboxLight => Ok(FreeTotpTheme::GruvboxLight),
+            Theme::GruvboxDark => Ok(FreeTotpTheme::GruvboxDark),
+            Theme::CatppuccinLatte => Ok(FreeTotpTheme::CatppuccinLatte),
+            Theme::CatppuccinFrappe => Ok(FreeTotpTheme::CatppuccinFrappe),
+            Theme::CatppuccinMacchiato => Ok(FreeTotpTheme::CatppuccinMacchiato),
+            Theme::CatppuccinMocha => Ok(FreeTotpTheme::CatppuccinMocha),
+            Theme::TokyoNight => Ok(FreeTotpTheme::TokyoNight),
+            Theme::TokyoNightStorm => Ok(FreeTotpTheme::TokyoNightStorm),
+            Theme::TokyoNightLight => Ok(FreeTotpTheme::TokyoNightLight),
+            Theme::KanagawaWave => Ok(FreeTotpTheme::KanagawaWave),
+            Theme::KanagawaDragon => Ok(FreeTotpTheme::KanagawaDragon),
+            Theme::KanagawaLotus => Ok(FreeTotpTheme::KanagawaLotus),
+            Theme::Moonfly => Ok(FreeTotpTheme::Moonfly),
+            Theme::Nightfly => Ok(FreeTotpTheme::Nightfly),
+            Theme::Oxocarbon => Ok(FreeTotpTheme::Oxocarbon),
+            Theme::Ferra => Ok(FreeTotpTheme::Ferra),
             Theme::Custom(_) => Err("Custom themes cannot be converted to ConfigTheme"),
         }
     }

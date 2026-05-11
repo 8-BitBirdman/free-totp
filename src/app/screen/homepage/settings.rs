@@ -11,7 +11,7 @@ use iced::{
     Subscription, Task, Theme, event,
     keyboard::{self, Key, key::Named},
     time::Instant,
-    widget::{button, column, container, mouse_area, pick_list, row, scrollable, space, text},
+    widget::{button, column, container, mouse_area, pick_list, row, scrollable, space, text, toggler},
 };
 use rfd::{AsyncFileDialog, FileHandle};
 use tracing::error;
@@ -19,7 +19,7 @@ use tracing::error;
 use crate::{
     APP_ID,
     app::{utils::style, widgets::Toast},
-    config::{ColockodeTheme, Config},
+    config::{FreeTotpTheme, Config},
     icons,
 };
 
@@ -34,7 +34,7 @@ pub enum Message {
     /// Callback after pressing a [`Hotkey`] of this page
     Hotkey(Hotkey),
     /// Callback after the user changes the current theme
-    ChangedTheme(ColockodeTheme),
+    ChangedTheme(FreeTotpTheme),
     /// Configuration Saved
     ConfigurationSaved(Result<(), anywho::Error>),
     /// Open the File Dialog to select a file to import
@@ -47,6 +47,8 @@ pub enum Message {
     ExportPathSelected(Option<FileHandle>),
     /// Opens the given URL in the browser
     LaunchUrl(String),
+    /// Callback after toggling the stay_on_tray option
+    ToggledStayOnTray(bool),
 }
 
 pub enum Action {
@@ -100,6 +102,18 @@ impl SettingsPage {
                     ));
                 } else {
                     error!("Warning: config mutex poisoned. Cannot change theme.");
+                }
+                Action::None
+            }
+            Message::ToggledStayOnTray(v) => {
+                if let Ok(mut cfg) = self.config.lock() {
+                    cfg.stay_on_tray = v;
+                    let cfg_clone = cfg.clone();
+
+                    return Action::Run(Task::perform(
+                        async move { cfg_clone.save(APP_ID).await },
+                        Message::ConfigurationSaved,
+                    ));
                 }
                 Action::None
             }
@@ -249,9 +263,22 @@ fn settings_view<'a>(config: &'a Arc<Mutex<Config>>) -> Element<'a, Message> {
                 Theme::ALL,
                 |t: &Theme| t.to_string(),
             )
-            .on_select(|t| Message::ChangedTheme(ColockodeTheme::try_from(&t).unwrap_or_default()))
+            .on_select(|t| Message::ChangedTheme(FreeTotpTheme::try_from(&t).unwrap_or_default()))
             .width(Length::Fill)
             .padding(12)
+        ]
+        .spacing(style::spacing::TINY),
+        // Stay on tray toggle
+        column![
+            text("System")
+                .size(style::font_size::BODY)
+                .style(style::label_text),
+            toggler(config.lock().map(|c| c.stay_on_tray).unwrap_or_default())
+                .label("Keep app running in tray when closed")
+                .on_toggle(Message::ToggledStayOnTray)
+                .width(Length::Shrink)
+                .size(24)
+                .spacing(style::spacing::MEDIUM)
         ]
         .spacing(style::spacing::TINY),
     ]
@@ -273,7 +300,7 @@ fn settings_view<'a>(config: &'a Arc<Mutex<Config>>) -> Element<'a, Message> {
                             .style(style::link_text)
                     )
                     .on_press(Message::LaunchUrl(String::from(
-                        "https://github.com/antigravity/free_totp/releases"
+                        "https://github.com/8-BitBirdman/free-totp/releases"
                     ))),
                     text(" - ")
                         .size(style::font_size::SMALL)
@@ -284,7 +311,7 @@ fn settings_view<'a>(config: &'a Arc<Mutex<Config>>) -> Element<'a, Message> {
                             .style(style::link_text)
                     )
                     .on_press(Message::LaunchUrl(String::from(
-                        "https://buymeacoffee.com/antigravity"
+                        "https://buymeacoffee.com/8_bitbirdman"
                     )))
                 ]
                 .spacing(style::spacing::SMALL)

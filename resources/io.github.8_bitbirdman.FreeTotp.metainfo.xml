@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <component type="desktop-application">
-    <id>dev.antigravity.FreeTotp</id>
-    <developer id="dev.antigravity">
-        <name>antigravity</name>
+    <id>io.github.8_bitbirdman.FreeTotp</id>
+    <developer id="io.github.8_bitbirdman">
+        <name>8-BitBirdman</name>
     </developer>
-    <url type="homepage">https://github.com/antigravity/free-totp</url>
-    <url type="bugtracker">https://github.com/antigravity/free-totp/issues</url>
-    <url type="donation">https://buymeacoffee.com/antigravity</url>
-    <url type="vcs-browser">https://github.com/antigravity/free-totp</url>
+    <url type="homepage">https://github.com/8-BitBirdman/free-totp</url>
+    <url type="bugtracker">https://github.com/8-BitBirdman/free-totp/issues</url>
+    <url type="donation">https://buymeacoffee.com/8-BitBirdman</url>
+    <url type="vcs-browser">https://github.com/8-BitBirdman/free-totp</url>
 
     <name>FreeTotp</name>
     <summary>TOTP Client</summary>
@@ -33,29 +33,29 @@
     </description>
 
     <icon type="remote" height="256" width="256">
-        https://raw.githubusercontent.com/antigravity/free-totp/main/resources/icons/hicolor/scalable/apps/icon.svg</icon>
-    <launchable type="desktop-id">dev.antigravity.FreeTotp.desktop</launchable>
+        https://raw.githubusercontent.com/8-BitBirdman/free-totp/main/resources/icons/hicolor/scalable/apps/icon.svg</icon>
+    <launchable type="desktop-id">io.github.8_bitbirdman.FreeTotp.desktop</launchable>
     <content_rating type="oars-1.1" />
 
     <screenshots>
         <screenshot type="default" xml:lang="en">
             <image>
-                https://raw.githubusercontent.com/antigravity/free-totp/main/screenshots/main-light.png</image>
+                https://raw.githubusercontent.com/8-BitBirdman/free-totp/main/screenshots/main-light.png</image>
             <caption>Main Page (Light)</caption>
         </screenshot>
         <screenshot xml:lang="en">
             <image>
-                https://raw.githubusercontent.com/antigravity/free-totp/main/screenshots/main-dark.png</image>
+                https://raw.githubusercontent.com/8-BitBirdman/free-totp/main/screenshots/main-dark.png</image>
             <caption>Main Page (Dark)</caption>
         </screenshot>
         <screenshot xml:lang="en">
             <image>
-                https://raw.githubusercontent.com/antigravity/free-totp/main/screenshots/add-light.png</image>
+                https://raw.githubusercontent.com/8-BitBirdman/free-totp/main/screenshots/add-light.png</image>
             <caption>New Entry Page (Light)</caption>
         </screenshot>
         <screenshot xml:lang="en">
             <image>
-                https://raw.githubusercontent.com/antigravity/free-totp/main/screenshots/add-dark.png</image>
+                https://raw.githubusercontent.com/8-BitBirdman/free-totp/main/screenshots/add-dark.png</image>
             <caption>New Entry Page (Dark)</caption>
         </screenshot>
     </screenshots>
