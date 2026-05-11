@@ -223,6 +223,8 @@ impl FreeTotp {
                         self.config.lock().map(|c| c.stay_on_tray).unwrap_or_default();
                     if stay_on_tray {
                         return iced::window::set_mode(id, iced::window::Mode::Hidden);
+                    } else {
+                        return iced::exit();
                     }
                 }
                 Task::none()

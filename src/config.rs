@@ -4,11 +4,20 @@ use anywho::anywho;
 use iced::Theme;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub theme: FreeTotpTheme,
     #[serde(default)]
     pub stay_on_tray: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            theme: FreeTotpTheme::default(),
+            stay_on_tray: true,
+        }
+    }
 }
 
 impl Config {

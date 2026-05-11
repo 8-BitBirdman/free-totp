@@ -81,6 +81,7 @@ fn main() -> iced::Result {
         }),
         icon: app_icon.ok(),
         platform_specific: platform_settings,
+        exit_on_close_request: false,
         ..Default::default()
     })
     .run()
