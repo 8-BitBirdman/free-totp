@@ -54,6 +54,10 @@ check *args:
 # Runs a clippy check with JSON message format
 check-json: (check '--message-format=json')
 
+# Bundle the application as a macOS .app
+bundle-mac:
+    cargo bundle --release
+
 # Run the application for testing purposes
 run *args:
     env RUST_BACKTRACE=full cargo run --release {{args}}
