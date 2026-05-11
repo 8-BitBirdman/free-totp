@@ -232,8 +232,8 @@ impl UpsertPage {
                         Ok(values) => {
                             let mut valid_entries = Vec::new();
                             for value in values {
-                                if let Ok(entry) = InputableFreeTotpEntry::from_url(value) {
-                                    valid_entries.push(entry);
+                                if let Ok(entries) = InputableFreeTotpEntry::from_url(value) {
+                                    valid_entries.extend(entries);
                                 }
                             }
 

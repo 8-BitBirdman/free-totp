@@ -81,19 +81,38 @@ impl TryFrom<InputableFreeTotpEntry> for FreeTotpEntry {
 }
 
 impl InputableFreeTotpEntry {
-    pub fn from_url(value: String) -> Result<Self, anywho::Error> {
-        let totp = totp_rs::TOTP::from_url_unchecked(value)?;
+    pub fn from_url(value: String) -> Result<Vec<Self>, anywho::Error> {
+        if value.starts_with("otpauth-migration://") {
+            let mut entries = Vec::new();
+            let migration = google_authenticator_converter::process_data(&value)
+                .map_err(|e| anywho!("Failed to decode migration URL: {}", e))?;
 
-        Ok(Self {
-            uuid: None,
-            name: totp.account_name.clone(),
-            algorithm: totp.algorithm,
-            digits: totp.digits,
-            step: totp.step,
-            secret: totp.get_secret_base32(),
-            issuer: totp.issuer,
-            account_name: totp.account_name,
-        })
+            for account in migration {
+                entries.push(Self {
+                    uuid: None,
+                    name: account.name.clone(),
+                    algorithm: Algorithm::SHA1,
+                    digits: 6,
+                    step: 30,
+                    secret: account.secret,
+                    issuer: Some(account.issuer),
+                    account_name: account.name,
+                });
+            }
+            Ok(entries)
+        } else {
+            let totp = totp_rs::TOTP::from_url_unchecked(value)?;
+            Ok(vec![Self {
+                uuid: None,
+                name: totp.account_name.clone(),
+                algorithm: totp.algorithm,
+                digits: totp.digits,
+                step: totp.step,
+                secret: totp.get_secret_base32(),
+                issuer: totp.issuer,
+                account_name: totp.account_name,
+            }])
+        }
     }
 
     /// Returns true if the entry is ready for submission
