@@ -23,6 +23,7 @@ Under the hood, FreeTotp uses a highly secure, encrypted **KeePass (.kdbx)** dat
 
 - 🎨 **Premium UI/UX**: A gorgeous, newly overhauled user interface featuring soft radiuses, elegant drop shadows, and expansive typography.
 - 📸 **Ultra-Robust QR Scanning**: Automatically handles dark-mode codes, transparent backgrounds, and low-contrast images via a multi-stage fallback engine.
+- 📥 **Background Batch Import**: Process dozens of QR screenshots simultaneously in the background without freezing the UI.
 - 📤 **Google Authenticator Migration**: Import your entire account library in one go. FreeTotp natively decodes `otpauth-migration://` URLs exported from Google Authenticator.
 - 📥 **Background Mode**: Optional "Stay in Tray" mode allows the app to keep running in the Menu Bar (macOS) or System Tray (Linux) even when the window is closed.
 - 📋 **One-Click Copy**: Hero-sized TOTP tokens that copy to your clipboard with a single click.
