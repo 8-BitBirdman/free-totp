@@ -431,26 +431,53 @@ fn content_view<'a>(entries: &'a [FreeTotpEntry]) -> Element<'a, Message> {
                     code.clone()
                 };
 
+                let subtitle_text = {
+                    let name_lc = entry.name.to_lowercase();
+                    let issuer = entry.totp.issuer.as_deref().unwrap_or("").trim();
+                    let acct = entry.totp.account_name.trim();
+                    let show_issuer = !issuer.is_empty() && !name_lc.contains(&issuer.to_lowercase());
+                    let show_acct = !acct.is_empty() && !name_lc.contains(&acct.to_lowercase());
+                    match (show_issuer, show_acct) {
+                        (true, true) => format!("{} · {}", issuer, acct),
+                        (true, false) => issuer.to_string(),
+                        (false, true) => acct.to_string(),
+                        (false, false) => String::new(),
+                    }
+                };
+
+                let mut name_col = column![
+                    text(&entry.name)
+                        .wrapping(text::Wrapping::Glyph)
+                        .size(style::font_size::LARGE),
+                ]
+                .spacing(style::spacing::TINY)
+                .width(Length::Fill);
+
+                if !subtitle_text.is_empty() {
+                    name_col = name_col.push(
+                        text(subtitle_text)
+                            .size(style::font_size::SMALL)
+                            .style(style::muted_text),
+                    );
+                }
+
+                name_col = name_col.push(
+                    row![
+                        text(format!(
+                            "{} digits · {}s",
+                            entry.totp.digits, time_remaining
+                        ))
+                        .size(style::font_size::SMALL)
+                        .style(style::muted_text),
+                        dot(time_remaining)
+                    ]
+                    .align_y(Alignment::Center)
+                    .spacing(style::spacing::SMALL),
+                );
+
                 let entry_view = container(
                     row![
-                        column![
-                            text(&entry.name)
-                                .wrapping(text::Wrapping::Glyph)
-                                .size(style::font_size::LARGE),
-                            row![
-                                text(format!(
-                                    "{} digits · {}s",
-                                    entry.totp.digits, time_remaining
-                                ))
-                                .size(style::font_size::SMALL)
-                                .style(style::muted_text),
-                                dot(time_remaining)
-                            ]
-                            .align_y(Alignment::Center)
-                            .spacing(style::spacing::SMALL),
-                        ]
-                        .spacing(style::spacing::TINY)
-                        .width(Length::Fill),
+                        name_col,
                         
                         text(formatted_code)
                             .size(style::font_size::HERO)

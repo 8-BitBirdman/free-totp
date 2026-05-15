@@ -88,23 +88,60 @@ impl InputableFreeTotpEntry {
                 .map_err(|e| anywho!("Failed to decode migration URL: {}", e))?;
 
             for account in migration {
+                let mut issuer_t = account.issuer.trim().to_string();
+                let name_t = account.name.trim();
+                // Google Auth often encodes name as "Issuer:user@x"; split it apart.
+                let acct_clean = match name_t.split_once(':') {
+                    Some((prefix, rest)) => {
+                        let prefix = prefix.trim();
+                        let rest = rest.trim();
+                        if rest.is_empty() {
+                            // Trailing colon — keep original to avoid empty account_name.
+                            name_t.to_string()
+                        } else if issuer_t.is_empty() {
+                            // Recover issuer from the name prefix.
+                            issuer_t = prefix.to_string();
+                            rest.to_string()
+                        } else if prefix.eq_ignore_ascii_case(&issuer_t) {
+                            rest.to_string()
+                        } else {
+                            name_t.to_string()
+                        }
+                    }
+                    None => name_t.to_string(),
+                };
+                let display_name = if issuer_t.is_empty() {
+                    acct_clean.clone()
+                } else if acct_clean.is_empty() {
+                    issuer_t.clone()
+                } else {
+                    format!("{} ({})", issuer_t, acct_clean)
+                };
+                let issuer_field = if issuer_t.is_empty() { None } else { Some(issuer_t) };
                 entries.push(Self {
                     uuid: None,
-                    name: account.name.clone(),
+                    name: display_name,
                     algorithm: Algorithm::SHA1,
                     digits: 6,
                     step: 30,
                     secret: account.secret,
-                    issuer: Some(account.issuer),
-                    account_name: account.name,
+                    issuer: issuer_field,
+                    account_name: acct_clean,
                 });
             }
             Ok(entries)
         } else {
             let totp = totp_rs::TOTP::from_url_unchecked(value)?;
+            let display_name = match &totp.issuer {
+                Some(iss) if !iss.trim().is_empty() && !totp.account_name.trim().is_empty() => {
+                    format!("{} ({})", iss, totp.account_name)
+                }
+                Some(iss) if !iss.trim().is_empty() => iss.clone(),
+                _ => totp.account_name.clone(),
+            };
             Ok(vec![Self {
                 uuid: None,
-                name: totp.account_name.clone(),
+                name: display_name,
                 algorithm: totp.algorithm,
                 digits: totp.digits,
                 step: totp.step,
